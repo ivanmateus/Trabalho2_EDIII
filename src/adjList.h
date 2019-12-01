@@ -1,3 +1,7 @@
+//Felipe Tiago de Carli - 10525686
+//Gabriel de Andrade Dezan - 10525706
+//Ivan Mateus de Lima Azevedo - 10525602
+
 #ifndef ADJLIST_H_
 #define ADJLIST_H_
 
@@ -21,6 +25,9 @@ typedef struct adjNode {
 typedef struct adjNode* adjList;
 
 adjNode *createAdjNode(char *cidadeDestino, char *estadoDestino, int distancia, char *tempoViagem, indexList *list);
+void initAdjList(adjList *G, int length);
 int insertAdjList(dataReg *reg, adjList *list, indexList *index, int back);
+int buildAdjList(char *fName, adjList *graph, indexList *index);
+void printAdjList(adjList *G, indexList *graphIndex);
 
 #endif

@@ -1,3 +1,7 @@
+//Felipe Tiago de Carli - 10525686
+//Gabriel de Andrade Dezan - 10525706
+//Ivan Mateus de Lima Azevedo - 10525602
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

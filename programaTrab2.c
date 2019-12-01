@@ -1,215 +1,214 @@
+//Felipe Tiago de Carli - 10525686
+//Gabriel de Andrade Dezan - 10525706
+//Ivan Mateus de Lima Azevedo - 10525602
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "programaTrab2.h"
 #include "./src/adjList.h"
 #include "./src/escreverNaTela.h"
 
-void buildIndex(char *fName, indexList *graphIndex){
-	FILE *fp = fopen(fName, "rb");
-	if (!fp) {
-  	printf("Falha no processamento do arquivo.\n");
-   	return;
-  }
-
-	//Read the header register
-	headerReg *hReg = (headerReg *)malloc(HREGSIZE);
-	fread(&(hReg->status),STATUSSIZE,1,fp);
-	fread(&(hReg->numeroVertices),VERTSIZE,1,fp);
-	fread(&(hReg->numeroArestas),EDGESIZE,1,fp);
-	fread(hReg->dataUltimaCompactacao,sizeof(char),LASTCOMPSIZE,fp);
-
-	//Create an auxiliary register to temporarily store the data
-	dataReg *reg = (dataReg *)malloc(DREGSIZE);
-	
-	//Create a buffer to read the data of the variable
-	//part of the register (i.e. the fields "cidadeOrigem",
-	//"cidadeDestino" and "tempoViagem")
-	char buf[VARSIZE];
-
-	//Variable to store the RRN of the current register
-	int rrn = 0;
-
-  if(hReg->status == '0') {
-    printf("Falha no carregamento do arquivo.\n");
-    return;
-  }
-
-	while(fread(reg->estadoOrigem,ORIGINSIZE,1,fp)) {
-		if(reg->estadoOrigem[0] == '\n'){
-			printf("Falha na execução da funcionalidade.\n");
-			return;				
-		} else if(reg->estadoOrigem[0] != '*'){
-			//Read and print the fixed size fields
-			fread(reg->estadoDestino,DESTSIZE,1,fp);
-			fread(&(reg->distancia),DISTANCESIZE,1,fp);
-			
-			//Read the rest of the register
-			fread(buf,VARSIZE,1,fp);
-
-			//Separate the fields using the "|" delimiter
-			//then print
-			char *bufPtr = buf;
-			char *field = strsep(&bufPtr,"|");
-			reg->cidadeOrigem = field;
-			
-			field = strsep(&bufPtr,"|");
-			reg->cidadeDestino = field;
-			
-      insertIndex(reg->cidadeOrigem, reg->estadoOrigem, graphIndex);
-      insertIndex(reg->cidadeDestino, reg->estadoDestino, graphIndex);
-			
-			//Go to the next RRN
-			++rrn;
-		} else {
-			++rrn;
-			fseek(fp,DREGSIZE-ORIGINSIZE,SEEK_CUR);
-		}
-	}
-
-	fclose(fp);
-}
-
-void buildAdjList(char *fName, adjList *graph, indexList *index){
-	FILE *fp = fopen(fName, "rb");
-	if (!fp) {
-  	printf("Falha no processamento do arquivo.\n");
-   	return;
-  }
-
-	//Read the header register
-	headerReg *hReg = (headerReg *)malloc(HREGSIZE);
-	fread(&(hReg->status),STATUSSIZE,1,fp);
-	fread(&(hReg->numeroVertices),VERTSIZE,1,fp);
-	fread(&(hReg->numeroArestas),EDGESIZE,1,fp);
-	fread(hReg->dataUltimaCompactacao,sizeof(char),LASTCOMPSIZE,fp);
-
-	//Create an auxiliary register to temporarily store the data
-	dataReg *reg = (dataReg *)malloc(DREGSIZE);
-	
-	//Create a buffer to read the data of the variable
-	//part of the register (i.e. the fields "cidadeOrigem",
-	//"cidadeDestino" and "tempoViagem")
-	char buf[VARSIZE];
-
-	//Variable to store the RRN of the current register
-	int rrn = 0;
-
-  if(hReg->status == '0') {
-    printf("Falha no carregamento do arquivo.\n");
-    return;
-  }
-
-	while(fread(reg->estadoOrigem,ORIGINSIZE,1,fp)) {
-		if(reg->estadoOrigem[0] == '\n'){
-			printf("Falha na execução da funcionalidade.\n");
-			return;				
-		} else if(reg->estadoOrigem[0] != '*'){
-			//Read the fixed size fields
-			fread(reg->estadoDestino,DESTSIZE,1,fp);
-			fread(&(reg->distancia),DISTANCESIZE,1,fp);
-			
-			//Read the rest of the register
-			fread(buf,VARSIZE,1,fp);
-
-			//Separate the fields using the "|" delimiter
-			//then print
-			char *bufPtr = buf;
-			char *field = strsep(&bufPtr,"|");
-			reg->cidadeOrigem = field;
-			
-			field = strsep(&bufPtr,"|");
-			reg->cidadeDestino = field;
-			
-			field = strsep(&bufPtr,"|");
-			reg->tempoViagem = field;
-
-      //Insert the node in the adjacence list
-      insertAdjList(reg, &graph[searchByCity(reg->cidadeOrigem,index)], index, 0);
-      insertAdjList(reg, &graph[searchByCity(reg->cidadeDestino,index)], index, 1);
-			
-			//Go to the next RRN
-			++rrn;
-		} else {
-			++rrn;
-			fseek(fp,DREGSIZE-ORIGINSIZE,SEEK_CUR);
-		}
-	}
-
-	fclose(fp);
-}
-
+//Compare if two int arrays are equal
+//(i.e. have the same values in the same positions)
 int compareArrays(int a[], int b[], int size)	{
 	for(int i = 0; i < size; ++i){
+    //If two different values were found,
+    //return 0
 		if(a[i] != b[i]){
 			return 0;
     }
 	}
+  //If the arrays are equal, return 1
 	return 1;
 }
 
-void printDjikstra(int origem, int D[], int ANT[], indexList *graphIndex){
-  indexNode *index = searchByIndex(origem, graphIndex);
+//Print the results of the Djikstra algorithm
+void printDjikstra(int origin, int D[], int ANT[], indexList *graphIndex){
+  //Get the index node of the origin
+  indexNode *index = searchByIndex(origin, graphIndex);
+  //Calculate the number of cities (vertices) in the graph
   int length = indexLength(graphIndex);
   for(int i = 0; i < length; ++i) {
-    if(i != origem){
+    //If the current index is equals to the origin
+    if(i != origin){
+      //Then get its index node
       indexNode *aux = searchByIndex(i, graphIndex);
+      //And its antecessor's index node
       indexNode *ant = searchByIndex(ANT[i], graphIndex);
+      //And print the corresponding values of the origin
       printf("%s %s ", index->cidade, index->estado);
+      //Of the current index
       printf("%s %s ", aux->cidade, aux->estado);
+      //The calculated distance in the distance array generated by the algorithm
       printf("%d ", D[i]);
+      //And the corresponding values of the antecessor
       printf("%s %s\n", ant->cidade, ant->estado);
     }
   }
 }
 
-void djikstra(int origem, adjList *G, indexList *graphIndex) {
+//Executes the Djikstra algorithm
+int djikstra(int origin, int *D, int *ANT, adjList *G, indexList *graphIndex) {
+  //If the given origin is -1, it means that the
+  //search for the city in the index list didn't found
+  //any city, so stop the execution
+  if(origin == -1){
+    printf("Cidade inexistente.\n");
+    return 0;
+  }
+
+  //Calculate the number of vertices
   int length = indexLength(graphIndex);
-  int S[length], V[length], D[length], ANT[length];
-  S[origem] = origem;
+  //Create two variables:
+  //V: is the array with all the cities
+  //S: is the array with the cities that were already
+  //evalued in the algorithm
+  int S[length], V[length];
+  //Put the origin in the S array
+  S[origin] = origin;
+  //And put distance 0 in the origin's position
+  D[origin] = 0;
+  //Initiate the arrays V and S
   for(int i = 0; i < length; ++i) {
+    //V will receive all vertices
     V[i] = i;
-    ANT[i] = -1;
-    if(i != origem) {
+    //And S will receive -1 in all positions
+    //except for origin, that has been set already
+    if(i != origin) {
       S[i] = -1;
-      D[i] = 999999999;
     }
   }
-  D[origem] = 0;
-  adjNode *aux = G[origem];
-  aux = aux->next;
+
+  //Get the adjacency list of the origin
+  adjNode *aux = G[origin];
+  //And initialize the D and ANT arrays
   while(aux != NULL){
+    //To the adjacent vertices, put the
+    //distances in the D array
     D[aux->index] = aux->distancia;
-    ANT[aux->index] = origem;
+    //And set the origin as their antecessor
+    ANT[aux->index] = origin;
     aux = aux->next;
   }
 
+  //While the S and V arrays aren't equal
   while(!compareArrays(S, V, length)){
-    int less = 0;
-    while(S[less] != -1){
-      ++less;
+    //Variable to store the minimum weight vertice
+    int min = 0;
+    //Search for an initial value of minimum
+    //that is in the S array (has been evalued already)
+    //For the first iteration, this value will be the same as the origin
+    while(S[min] != -1){
+      ++min;
     }
+    //For all the vertices in the graph
     for(int i = 0; i < length; ++i){
-      if(i != less && D[i] < D[less] && S[i] == -1){
-        less = i;
-      } else if (i != less && D[i] == D[less] && S[i] == -1) {
-        less = i < less ? i : less;
+      //If the current vertice is not the minimum and
+      //its distance is less than the minimum's one
+      //and if the vertice hasn't been evalued yet (S[i] == -1)
+      //Else, if the distance is the same, the minimum
+      //will be the less vertice
+      if(i != min && D[i] < D[min] && S[i] == -1){
+        //Then make it the minimum
+        min = i;
+      } else if (i != min && D[i] == D[min] && S[i] == -1) {
+        //If the less is i, then min is i, otherwise, keep the same
+        min = i < min ? i : min;
       }
     }
-    S[less] = less;
-    aux = G[less];
-    aux = aux->next;
+    //After a minimum was found, put it in the S array
+    //to simbolize it was evalued
+    S[min] = min;
+    //Get the adjacency list for the minimum
+    aux = G[min];
+    //And for all the adjacent vertices
     while(aux != NULL){
-      if(D[aux->index] != D[less] + aux->distancia){
-        if(D[less] + aux->distancia < D[aux->index]){
-          D[aux->index] = D[less] + aux->distancia;
-          ANT[aux->index] = less;
+      //If the distance of the current index is different
+      //of the distance of the min + the weight of the current index
+      if(D[aux->index] != D[min] + aux->distancia){
+        //And if the distance of the min + the weight of the current index
+        //is less than the distance of the current index
+        if(D[min] + aux->distancia < D[aux->index]){
+          //Set it as the new distance
+          D[aux->index] = D[min] + aux->distancia;
+          //And make min the antecessor
+          ANT[aux->index] = min;
         }        
       }
       aux = aux->next;
     }
   }
+  return 1;
+}
 
-  printDjikstra(origem, D, ANT, graphIndex);
+//Check if a vertice is inside a component
+int isVInComponent(int U[], int V){
+  if(U[V] != -1){
+    return 1;
+  }
+  return 0;
+}
+
+//Execute the Prim's minimum spanning tree algorithm
+int prim(int origin, adjList *G, adjList *minTree, indexList *graphIndex, int length){
+  if(origin == -1){
+    printf("Cidade inexistente.\n");
+    return 0;
+  }
+  int U[length], V[length];
+  U[origin] = origin;
+  for(int i = 0; i < length; ++i) {
+    V[i] = i;
+    if(i != origin) {
+      U[i] = -1;
+    }
+  }
+
+  while(!compareArrays(U, V, length)){
+    int u = -1;
+    int v = -1;
+    adjNode *minWEdge = NULL;
+    for(int i = 0; i < length; ++i){
+      if(isVInComponent(U, i)){
+        adjNode *aux = (G[i])->next;
+        while(aux != NULL){
+          if(!isVInComponent(U, aux->index)){
+            if(minWEdge == NULL){
+              minWEdge = aux;
+              u = i;
+              v = minWEdge->index;
+            } else if(aux->distancia != minWEdge->distancia){
+              if(aux->distancia < minWEdge->distancia){
+                minWEdge = aux;
+                u = i;
+                v = minWEdge->index;
+              }
+            } else if(aux->distancia == minWEdge->distancia){
+              if((i < u) || (i == u && aux->index < v)){
+                minWEdge = aux;
+                u = i;
+                v = minWEdge->index;
+              }
+            }
+            aux = aux->next;
+          } else {
+            aux = aux->next;
+          }
+        }
+      }
+    }
+    dataReg *reg = (dataReg *)malloc(sizeof(dataReg));
+    strcpy(reg->estadoOrigem,G[u]->estado);
+    strcpy(reg->estadoDestino,minWEdge->estado);
+    reg->distancia = minWEdge->distancia;
+    reg->cidadeOrigem = G[u]->cidade;
+    reg->cidadeDestino = minWEdge->cidade;
+    reg->tempoViagem = minWEdge->tempoViagem;
+    insertAdjList(reg, &minTree[searchByCity(reg->cidadeOrigem,graphIndex)], graphIndex, 0);
+    insertAdjList(reg, &minTree[searchByCity(reg->cidadeDestino,graphIndex)], graphIndex, 1);
+    U[v] = v;
+  }
+  return 1;
 }
 
 int main(void){
@@ -223,42 +222,46 @@ int main(void){
   indexList *graphIndex = (indexList *)malloc(sizeof(indexList));
 	*graphIndex = NULL;
   buildIndex(arqInp, graphIndex);
+  int length = indexLength(graphIndex);
 
-  //Build the adjacency list with each city mapped in the index above
-  adjList *G = (adjList *)malloc(sizeof(adjList *) * indexLength(graphIndex));
-  *G = NULL;
-  indexNode *auxIndex = *graphIndex;
-  for(int i = 0; i < indexLength(graphIndex); ++i) {
-    adjNode *new = createAdjNode(auxIndex->cidade,auxIndex->estado,0,"NULO",graphIndex);
-    G[i] = new;
-    auxIndex = auxIndex->next;
+  //Initialize the adjacency list with each city mapped in the index above
+  adjList *G = (adjList *)malloc(sizeof(adjList *) * length);
+  initAdjList(G, length);
+
+  adjList *T = (adjList *)malloc(sizeof(adjList *) * length);
+  *T = NULL;
+  initAdjList(T, length);
+
+  int D[length], ANT[length];
+  for(int i = 0; i < length; ++i) {
+    ANT[i] = -1;
+    D[i] = 999999999;
   }
 
-	switch (option)	{
+  switch (option)	{
 		case 9:
       buildAdjList(arqInp, G, graphIndex);			
-	    for(int i = 0; i < indexLength(graphIndex); ++i) {
-        adjNode *auxNode = G[i];
-        printf("%s %s ", auxNode->cidade, auxNode->estado);
-        auxNode = auxNode->next;
-        while (auxNode != NULL){
-          if(strcmp(auxNode->tempoViagem,"") == 0){
-            printf("%s %s %d ", auxNode->cidade, auxNode->estado, auxNode->distancia);
-            auxNode = auxNode->next;
-          } else {
-            printf("%s %s %d %s ", auxNode->cidade, auxNode->estado, auxNode->distancia, auxNode->tempoViagem);
-            auxNode = auxNode->next;
-          }
-        }
-        printf("\n");
-      }		
+	    printAdjList(G, graphIndex);
       break;
 
     case 10:
 			scanf("%s",field);
 			scan_quote_string(cidadeOrigem);
-      buildAdjList(arqInp, G, graphIndex);
-      djikstra(searchByCity(cidadeOrigem, graphIndex), G, graphIndex);
+      if(buildAdjList(arqInp, G, graphIndex)){
+        if(djikstra(searchByCity(cidadeOrigem, graphIndex), D, ANT, G, graphIndex)){
+          printDjikstra(searchByCity(cidadeOrigem, graphIndex), D, ANT, graphIndex);
+        }
+      }
+      break;
+
+    case 11:
+			scanf("%s",field);
+			scan_quote_string(cidadeOrigem);
+      if(buildAdjList(arqInp, G, graphIndex)){
+        if(prim(searchByCity(cidadeOrigem, graphIndex), G, T, graphIndex, length)){
+          printAdjList(T,graphIndex);
+        }
+      }
       break;
 
 		default:

@@ -1,3 +1,7 @@
+//Felipe Tiago de Carli - 10525686
+//Gabriel de Andrade Dezan - 10525706
+//Ivan Mateus de Lima Azevedo - 10525602
+
 #ifndef ESCREVERNATELA_H_
 #define ESCREVERNATELA_H_
 #include <stdio.h>
