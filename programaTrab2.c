@@ -170,7 +170,7 @@ int prim(int origin, adjList *G, adjList *minTree, indexList *graphIndex, int le
     adjNode *minWEdge = NULL;
     for(int i = 0; i < length; ++i){
       if(isVInComponent(U, i)){
-        adjNode *aux = (G[i])->next;
+        adjNode *aux = G[i];
         while(aux != NULL){
           if(!isVInComponent(U, aux->index)){
             if(minWEdge == NULL){
@@ -197,11 +197,12 @@ int prim(int origin, adjList *G, adjList *minTree, indexList *graphIndex, int le
         }
       }
     }
+    indexNode *index = searchByIndex(u, graphIndex);
     dataReg *reg = (dataReg *)malloc(sizeof(dataReg));
-    strcpy(reg->estadoOrigem,G[u]->estado);
+    strcpy(reg->estadoOrigem,index->estado);
     strcpy(reg->estadoDestino,minWEdge->estado);
     reg->distancia = minWEdge->distancia;
-    reg->cidadeOrigem = G[u]->cidade;
+    reg->cidadeOrigem = index->cidade;
     reg->cidadeDestino = minWEdge->cidade;
     reg->tempoViagem = minWEdge->tempoViagem;
     insertAdjList(reg, &minTree[searchByCity(reg->cidadeOrigem,graphIndex)], graphIndex, 0);
