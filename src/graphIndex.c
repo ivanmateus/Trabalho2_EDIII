@@ -8,12 +8,14 @@
 #include "graphIndex.h"
 #include "../programaTrab2.h"
 
-//Create a new node to the index list
+//Cria um novo nó para a lista de índices
 indexNode *createIndexNode(int index, char *city, char *state){
-	indexNode *new = (indexNode *)malloc(sizeof(indexNode));	//Allocate memory for the node
+	indexNode *new = (indexNode *)malloc(sizeof(indexNode));	//Aloca memória para o nó
+	//Se não conseguiu alocar, retorna NULL
 	if(new == NULL){
 		return 0;
 	}
+	//Insere os dados no novo nó
   new->i = index;
 	new->cidade = (char *)malloc(strlen(city) * sizeof(char));
 	strcpy(new->cidade,city);
@@ -23,24 +25,26 @@ indexNode *createIndexNode(int index, char *city, char *state){
 	return new;
 }
 
-//Insert a new node in the index list
+//Insere um novo nó na lista de índices
 int insertIndex(char *city, char *state, indexList *list){
 	indexNode *aux = *list;
 
-	//If the list is empty
+	//Se a lista estiver vazia
 	if(aux == NULL){
-		//Make the new node its head
+		//Torna o novo nó o cabeça da lista, com índice 0
 		indexNode *new = createIndexNode(0, city, state);
 		*list = new;
 		return 1;
 	}
-	//If the new city comes before the first one
+	//Se a nova cidade vier antes da cidade no cabeça
+	//da lista (em ordem alfabética)
   if(strcmp(city, aux->cidade) < 0){
-    indexNode *new = createIndexNode(aux->i, city, state);
-		//Insert it before and make it the new head
+		//Cria o nó com o índice 0
+    indexNode *new = createIndexNode(0, city, state);
+		//Insere a nova cidade antes e a torna o cabeça da lista
 		new->next = aux;
     *list = new;
-		//And increment the following indexes
+		//E incrementa todos os índices seguintes
     while(aux != NULL){
       aux->i = aux->i + 1;
       aux = aux->next;
@@ -48,25 +52,23 @@ int insertIndex(char *city, char *state, indexList *list){
 		return 1;
   }
   
-	//Variable to store the current index
-  int i = 1;
-	//While the list doesn't end
+	//Enquanto a lista não chega no fim
 	while(aux->next != NULL){
-		//If there's already an entry, don't insert
+		//Se já houver uma cidade na lista, não insere novamente
 		if(strcmp(city, aux->cidade) == 0){
 			return 0;
 		}
-		//If the new city is between the current (aux)
-		//and the next (aux->next), insert it between them
+		//Se a posição da cidade for entre o nó atual (aux)
+		//e o pŕoximo (aux->next), então insere o novo entre eles
     if(strcmp(city, aux->next->cidade) < 0){
       indexNode *new = createIndexNode(aux->next->i, city, state);
-			//Store the pointer to the next
+      //Guarde o ponteiro para o próximo
       indexNode *temp = aux->next;
-			//Point the current to the new
+			//Aponte o ponteiro do atual para o novo
 			aux->next = new;
-			//Point the new to the old next (stored in temp)
+			//Aponte o ponteiro do novo para o antigo pŕoximo (guardado na variável temp)
       new->next = temp;
-			//And increment the following indexes
+			//E incremente os índices seguintes
       while(temp != NULL){
         temp->i = temp->i + 1;
         temp = temp->next;
@@ -74,61 +76,59 @@ int insertIndex(char *city, char *state, indexList *list){
 			return 1;
     }
 		aux = aux->next;
-    ++i;
 	}
-	//If the last element has been reached and
-	//the city hasn't been inserted, insert it in the end
+	//Se a lista chegou ao fim e a nova cidade for diferente
+	//da última, então insere o novo nó no fim
   if(aux->next == NULL && strcmp(city, aux->cidade) != 0){
-    indexNode *new = createIndexNode(i, city, state);
+    indexNode *new = createIndexNode(aux->i, city, state);
 		aux->next = new;
 		return 1;
   }
 	return 0;
 }
 
-//Build the index list based on the .bin file
+//Constroi a lista de índices baseado no arquivo de entrada .bin
 void buildIndex(char *fName, indexList *graphIndex){
 	FILE *fp = fopen(fName, "rb");
 	if (!fp) {
    	return;
   }
 
-	//Read the header register
+	//Leia o registro de cabeçalho
 	headerReg *hReg = (headerReg *)malloc(HREGSIZE);
 	fread(&(hReg->status),STATUSSIZE,1,fp);
 	fread(&(hReg->numeroVertices),VERTSIZE,1,fp);
 	fread(&(hReg->numeroArestas),EDGESIZE,1,fp);
 	fread(hReg->dataUltimaCompactacao,sizeof(char),LASTCOMPSIZE,fp);
 
-	//Create an auxiliary register to temporarily store the data
+	//Cria um registro de dados auxiliar para guardar
+	//temporariamente os dados de cada registro
 	dataReg *reg = (dataReg *)malloc(DREGSIZE);
 	
-	//Create a buffer to read the data of the variable
-	//part of the register (i.e. the fields "cidadeOrigem",
-	//"cidadeDestino" and "tempoViagem")
+	//Cria um buffer para ler a parte variável
+	//do registro de dados (i.e. os campos "cidadeOrigem",
+	//"cidadeDestino" e "tempoViagem")
 	char buf[VARSIZE];
 
-	//Variable to store the RRN of the current register
+	//Variável para guardar o RRN do registro atual
 	int rrn = 0;
 
-	//If the file isn't consistent, stop the execution
+	//Se o arquivo estiver inconsistente, para a execução
   if(hReg->status == '0') {
     return;
   }
 
-	//While there are registers to be read
+	//Enquanto houver registros a serem lidos
 	while(fread(reg->estadoOrigem,ORIGINSIZE,1,fp)) {
-		if(reg->estadoOrigem[0] == '\n'){
-			return;				
-		} else if(reg->estadoOrigem[0] != '*'){
-			//Read the fixed size fields
+		if(reg->estadoOrigem[0] != '*'){
+			//Leia os outros campos de tamanho fixo
 			fread(reg->estadoDestino,DESTSIZE,1,fp);
 			fread(&(reg->distancia),DISTANCESIZE,1,fp);
 			
-			//Read the rest of the register
+			//Leia a parte variável do registro
 			fread(buf,VARSIZE,1,fp);
 
-			//Separate the fields using the "|" delimiter
+			//Separe os campos pelo delimitador "|"
 			char *bufPtr = buf;
 			char *field = strsep(&bufPtr,"|");
 			reg->cidadeOrigem = field;
@@ -136,11 +136,11 @@ void buildIndex(char *fName, indexList *graphIndex){
 			field = strsep(&bufPtr,"|");
 			reg->cidadeDestino = field;
 			
-			//Insert both cities (origin and destination)
+			//Insere ambas as cidades (origem e destino)
       insertIndex(reg->cidadeOrigem, reg->estadoOrigem, graphIndex);
       insertIndex(reg->cidadeDestino, reg->estadoDestino, graphIndex);
 			
-			//Go to the next RRN
+			//Vá para o próximo RRN
 			++rrn;
 		} else {
 			++rrn;
@@ -151,47 +151,47 @@ void buildIndex(char *fName, indexList *graphIndex){
 	fclose(fp);
 }
 
-//Search the corresponding index of a given city
+//Procura o índice correspondente a uma cidade
 int searchByCity(char *city, indexList *list) {
   indexNode *aux = *list;
-	//While the list doesn't end
+	//Enquanto a lista não termina
   while(aux != NULL){
-		//If the city was found, return the index
+		//Se achou a cidade, retorna seu índice
     if(strcmp(city, aux->cidade) == 0) {
       return aux->i;
     }
     aux = aux->next;
   }
-	//If no city was found, return -1
+	//Se não achou cidade alguma, retorna -1
   return -1;
 }
 
-//Search an index list node based on a given index
+//Procura um nó da lista baseado no índice
 indexNode *searchByIndex(int index, indexList *list) {
   indexNode *aux = *list;
-	//While the list doesn't end
+	//Enquanto a lista não terminar
   while(aux != NULL){
-		//If the index was found, return the node
+		//Se achou o índice, retorna o nó
     if(index == aux->i) {
       return aux;
     }
     aux = aux->next;
   }
-	//If no index was found, return NULL
+	//Se não achou, retorna NULL
   return NULL;
 }
 
-//Calculate the length of the index list
-//which means the number of cities in the graph
-//(i.e. the number of vertices)
+//Calcula o tamanho da lista de índices,
+//ou seja, o número de vértices do grafo, que é o 
+//mesmo que o número de cidades diferentes
 int indexLength(indexList *list) {
   indexNode *aux = *list;
-  //Variable to store the size of the list
+  //Variável que guarda o tamanho da lista
 	int i;
-	//Increment the variable until the list ends
+	//Incrementa a variável até a lista terminar
   for(i = 0; aux != NULL; ++i){
     aux = aux->next;
   }
-	//Return the value
+	//Retorna o valor calculado
   return i;
 }

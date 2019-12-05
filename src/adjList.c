@@ -6,14 +6,16 @@
 #include <stdlib.h>
 #include "adjList.h"
 
-//Create a new node to the adjacency list
+//Cria um novo nó para a lista de adjacências
 adjNode *createAdjNode(char *cidade, char *estado, int distancia, char *tempoViagem, indexList *graphIndex){
-	adjNode *new = (adjNode *)malloc(sizeof(adjNode));	//Allocate memory for the node
+	adjNode *new = (adjNode *)malloc(sizeof(adjNode));	//Aloca memória para o nó
+	//Se não conseguiu alocar memória, retorna NULL
 	if(new == NULL){
 		return NULL;
 	}
-	//Search for the corresponding index
+	//Procura pelo índice correspondente baseado na cidade
 	int index = searchByCity(cidade, graphIndex);
+	//E insere os dados no nó
   new->index = index;
 	new->cidade = (char *)malloc(strlen(cidade) * sizeof(char));
 	strcpy(new->cidade,cidade);
@@ -26,40 +28,45 @@ adjNode *createAdjNode(char *cidade, char *estado, int distancia, char *tempoVia
 	return new;
 }
 
-//Initialize an adjacency list
+//Inicializa uma lista de adjacências
 void initAdjList(adjList *G, int length){
   for(int i = 0; i < length; ++i) {
+		//Aloca memória para o ponteiro
     G[i] = (adjNode *)malloc(sizeof(adjNode));
+		//E seta ele para NULL
 		G[i] = NULL;
   }
 }
 
-//Insert a new node in the adjacency list with
-//data given by a register (dataReg). The function receives a "back"
-//flag to indicate the direction of the insertion
-//(from the origin to the destination or the contrary)
+//Insere um novo nó na lista de adjacências com os
+//dados que estão contidos em um registro de dados lido.
+//A função recebe uma flag "back", que é utilizada para
+//indicar a direção da inserção (se é origem->destino,
+//ou destino->origem)
 int insertAdjList(dataReg *reg, adjList *head, indexList *graphIndex, int back){
-	//Instance an aux node to help in the insertion
+	//Instancia um nó auxiliar para ajudar na inserção
 	adjNode *aux = *head;
-	//If the flag is set, then the insertion is from the destination to the origin (dest->origin)
-	//So the origin city will be inserted in the adjacency list of the dest. city.
-	//The same applies to the state.
-	//If the flag isn't set, then the insertion is from origin to destination (origin->dest)
+	//Se a flag "back" estiver setada, então a direção é
+	//da cidade/estado origem à cidade/estado destino. Dessa forma, temos que
+	//se a flag estiver setada, a cidade a ser inserida é a cidade origem, na
+	//lista de adjacências da cidade destino. Se a flag estiver zerada, a cidade
+	//inserida é a cidade destino na lista de adjacências da cidade origem.
 	char *cidade = (char *)malloc(strlen(back ? reg->cidadeOrigem : reg->cidadeDestino) * sizeof(char));
 	back ? strcpy(cidade,reg->cidadeOrigem) : strcpy(cidade,reg->cidadeDestino);
 	char *estado = (char *)malloc(strlen(back ? reg->estadoOrigem : reg->estadoDestino) * sizeof(char));
 	back ? strcpy(estado,reg->estadoOrigem) : strcpy(estado,reg->estadoDestino);
 
-	//If the list is still empty
+	//Se a lista tiver vazia ainda
 	if(aux == NULL){
-		//The new node becomes the head of the list
+		//O novo nó se torna o cabeça da lista
 		adjNode *new = createAdjNode(cidade, estado, reg->distancia, reg->tempoViagem, graphIndex);
     *head = new;
 		return 1;
 	}
-	//If the city of the new node comes
-	//before the first one, insert before
-	//and make it the head of the list
+	//Se a cidade a ser inserida vem antes da cidade
+	//que está na cabeça da lista (em ordem alfabética),
+	//insere o novo nó antes da cabeça e o torna
+	//o novo cabeça
   if(strcmp(cidade, aux->cidade) < 0){
     adjNode *new = createAdjNode(cidade, estado, reg->distancia, reg->tempoViagem, graphIndex);
 		new->next = aux;
@@ -67,29 +74,28 @@ int insertAdjList(dataReg *reg, adjList *head, indexList *graphIndex, int back){
 		return 1;
   }
 
-	//While there are nodes in the list
+	//Enquanto houver nós a serem lidos
 	while(aux->next != NULL){
-		//If there is an entry already, don't insert
+		//Se já houver uma cidade na lista, não insere novamente
 		if(strcmp(cidade, aux->cidade) == 0){
 			return 0;
 		}
-		//If the new city is between the current (aux)
-		//and the next (aux->next), the insert it
-		//between them
+		//Se a posição da cidade for entre o nó atual (aux)
+		//e o pŕoximo (aux->next), então insere o novo entre eles
     if(strcmp(cidade, aux->next->cidade) < 0){
       adjNode *new = createAdjNode(cidade, estado, reg->distancia, reg->tempoViagem, graphIndex);
-      //Store the pointer to the next
+      //Guarde o ponteiro para o próximo
 			adjNode *temp = aux->next;
-			//Point the current to the new
+			//Aponte o ponteiro do atual para o novo
 			aux->next = new;
-			//Point the new to the old next (stored in temp)
+			//Aponte o ponteiro do novo para o antigo pŕoximo (guardado na variável temp)
       new->next = temp;
 			return 1;
     }
 		aux = aux->next;
 	}
-	//If the last element of the list has been reached
-	//and the new city is different from this element's one, insert
+	//Se a lista chegou ao fim e a nova cidade for diferente
+	//da última, então insere o novo nó no fim
   if(aux->next == NULL && strcmp(cidade, aux->cidade) != 0){
     adjNode *new = createAdjNode(cidade, estado, reg->distancia, reg->tempoViagem, graphIndex);
 		aux->next = new;
@@ -98,7 +104,7 @@ int insertAdjList(dataReg *reg, adjList *head, indexList *graphIndex, int back){
 	return 0;
 }
 
-//Build an adjancency list based on the .bin file
+//Constroi uma lista de adjacências baseado no arquivo .bin de entrada
 int buildAdjList(char *fName, adjList *graph, indexList *index){
 	FILE *fp = fopen(fName, "rb");
 	if (!fp) {
@@ -106,44 +112,42 @@ int buildAdjList(char *fName, adjList *graph, indexList *index){
    	return 0;
   }
 
-	//Read the header register
+	//Lê o registro de cabeçalho
 	headerReg *hReg = (headerReg *)malloc(HREGSIZE);
 	fread(&(hReg->status),STATUSSIZE,1,fp);
 	fread(&(hReg->numeroVertices),VERTSIZE,1,fp);
 	fread(&(hReg->numeroArestas),EDGESIZE,1,fp);
 	fread(hReg->dataUltimaCompactacao,sizeof(char),LASTCOMPSIZE,fp);
 
-	//Create an auxiliary register to temporarily store the data
+	//Cria um registro auxiliar para guardar os dados temporariamente
 	dataReg *reg = (dataReg *)malloc(DREGSIZE);
 	
-	//Create a buffer to read the data of the variable
-	//part of the register (i.e. the fields "cidadeOrigem",
-	//"cidadeDestino" and "tempoViagem")
+	//Cria um buffer para ler a parte variável do registro
+	//de dados (i.e. os campos "cidadeOrigem",
+	//"cidadeDestino" e "tempoViagem")
 	char buf[VARSIZE];
 
-	//Variable to store the RRN of the current register
+	//Variável para guardar o RRN do registro atual
 	int rrn = 0;
 
-	//If the document isn't consistent, stop the execution
+	//Se o documento não estiver consistente, pare a execução
   if(hReg->status == '0') {
     printf("Falha no carregamento do arquivo.\n");
     return 0;
   }
 
-	//While there are registers to be read
+	//Enquanto houver registros a serem lidos no arquivo
 	while(fread(reg->estadoOrigem,ORIGINSIZE,1,fp)) {
-		if(reg->estadoOrigem[0] == '\n'){
-			printf("Falha na execução da funcionalidade.\n");
-			return 0;				
-		} else if(reg->estadoOrigem[0] != '*'){
-			//Read the fixed size fields
+		//Se o registro não foi excluído
+		if(reg->estadoOrigem[0] != '*'){
+			//Leia os outros campos de tamanho fixo
 			fread(reg->estadoDestino,DESTSIZE,1,fp);
 			fread(&(reg->distancia),DISTANCESIZE,1,fp);
 			
-			//Read the rest of the register
+			//Leia o resto do registro
 			fread(buf,VARSIZE,1,fp);
 
-			//Separate the fields using the "|" delimiter
+			//Separa os campos de acordo com o delimitador "|"
 			char *bufPtr = buf;
 			char *field = strsep(&bufPtr,"|");
 			reg->cidadeOrigem = field;
@@ -154,11 +158,13 @@ int buildAdjList(char *fName, adjList *graph, indexList *index){
 			field = strsep(&bufPtr,"|");
 			reg->tempoViagem = field;
 
-      //Insert the node in the adjacency list
+      //Insere na lista de adjacências nas duas direções
+			//da cidade origem à cidade destino
       insertAdjList(reg, &graph[searchByCity(reg->cidadeOrigem,index)], index, 0);
-      insertAdjList(reg, &graph[searchByCity(reg->cidadeDestino,index)], index, 1);
+      //e da cidade destino à cidade origem
+			insertAdjList(reg, &graph[searchByCity(reg->cidadeDestino,index)], index, 1);
 			
-			//Go to the next RRN
+			//Vá para o próximo RRN
 			++rrn;
 		} else {
 			++rrn;
@@ -170,16 +176,16 @@ int buildAdjList(char *fName, adjList *graph, indexList *index){
 	return 1;
 }
 
-//Print the adjacency list
+//Imprime a lista de adjacências
 void printAdjList(adjList *G, indexList *graphIndex) {
 	indexNode *auxInd = *graphIndex;
   for(int i = 0; i < indexLength(graphIndex); ++i) {
-		//Print the city/state correspondent to the list
+		//Imprime a cidade/estado correspondente no índice
     printf("%s %s ", auxInd->cidade, auxInd->estado);
     adjNode *auxNode = G[i];
-		//And print the list
+		//E imprime a lista de adjacências
     while (auxNode != NULL){
-			//If the field "tempoViagem" is "", don't print it
+			//Se o campo tempoViagem for vazio, não imprime
       if(strcmp(auxNode->tempoViagem,"") == 0){
         printf("%s %s %d ", auxNode->cidade, auxNode->estado, auxNode->distancia);
         auxNode = auxNode->next;
@@ -188,6 +194,7 @@ void printAdjList(adjList *G, indexList *graphIndex) {
         auxNode = auxNode->next;
       }
     }
+		//Vai para a próxima cidade no índice
 		auxInd = auxInd->next;
     printf("\n");
   }

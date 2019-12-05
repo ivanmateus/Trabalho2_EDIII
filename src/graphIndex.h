@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-//-----Data structure for a node of the index list
+//-----Estrutura de dados para um nó da lista de índices
 typedef struct indexNode {
 	int i;
   char *cidade;
@@ -17,7 +17,7 @@ typedef struct indexNode {
 	struct indexNode* next;
 } indexNode;
 
-//-----Data structure for a list of indexes
+//-----Estrutura de dados para uma lista de índices
 typedef struct indexNode* indexList;
 
 indexNode *createIndexNode(int index, char *city, char state[2]);

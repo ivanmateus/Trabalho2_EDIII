@@ -11,7 +11,7 @@
 #include "../programaTrab2.h"
 #include "../src/graphIndex.h"
 
-//-----Data structure for a node of the adjacency list
+//-----Estrutura de dados para um nó da lista de adjacências
 typedef struct adjNode {
 	int index;
   char *cidade;
@@ -21,7 +21,7 @@ typedef struct adjNode {
 	struct adjNode* next;
 } adjNode;
 
-//-----Data structure for a list of nodes
+//-----Estrutura para uma lista de adjacências
 typedef struct adjNode* adjList;
 
 adjNode *createAdjNode(char *cidadeDestino, char *estadoDestino, int distancia, char *tempoViagem, indexList *list);
