@@ -278,12 +278,7 @@ int main(void){
   indexList *graphIndex = (indexList *)malloc(sizeof(indexList));
 	*graphIndex = NULL;
   buildIndex(arqInp, graphIndex);
-  int length = indexLength(graphIndex);
-  indexNode *aux = *graphIndex;
-  for (; aux != NULL; aux = aux->next)  {
-    printf("%d %s\n", aux->i, aux->cidade);
-  }
-  
+  int length = indexLength(graphIndex);  
 
   //Inicializa a lista de adjacências do grafo de entrada G
   adjList *G = (adjList *)malloc(sizeof(adjList *) * length);
