@@ -40,7 +40,7 @@ int insertIndex(char *city, char *state, indexList *list){
 	//da lista (em ordem alfabética)
   if(strcmp(city, aux->cidade) < 0){
 		//Cria o nó com o índice 0
-    indexNode *new = createIndexNode(0, city, state);
+    indexNode *new = createIndexNode(aux->i, city, state);
 		//Insere a nova cidade antes e a torna o cabeça da lista
 		new->next = aux;
     *list = new;
@@ -52,6 +52,8 @@ int insertIndex(char *city, char *state, indexList *list){
 		return 1;
   }
   
+	//Variável para guardar o índice atual
+	int i = 1;
 	//Enquanto a lista não chega no fim
 	while(aux->next != NULL){
 		//Se já houver uma cidade na lista, não insere novamente
@@ -76,11 +78,12 @@ int insertIndex(char *city, char *state, indexList *list){
 			return 1;
     }
 		aux = aux->next;
+		++i;
 	}
 	//Se a lista chegou ao fim e a nova cidade for diferente
 	//da última, então insere o novo nó no fim
   if(aux->next == NULL && strcmp(city, aux->cidade) != 0){
-    indexNode *new = createIndexNode(aux->i, city, state);
+    indexNode *new = createIndexNode(i, city, state);
 		aux->next = new;
 		return 1;
   }
